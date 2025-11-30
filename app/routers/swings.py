@@ -222,3 +222,46 @@ async def get_swing(
             status_code=500,
             detail=f"Failed to fetch swing: {str(e)}"
         )
+
+
+@router.delete(
+    "/{swing_id}",
+    responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}}
+)
+async def delete_swing(
+    swing_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete a specific swing analysis by ID.
+
+    Returns a success message upon deletion.
+    """
+    try:
+        logger.info(f"Deleting swing with ID: {swing_id}")
+
+        swing = await swing_service.get_swing_by_id(db, swing_id)
+
+        if not swing:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Swing with ID {swing_id} not found"
+            )
+
+        await swing_service.delete_swing(db, swing_id)
+
+        logger.info(f"Successfully deleted swing {swing_id}")
+
+        return {
+            "message": f"Swing {swing_id} deleted successfully",
+            "id": swing_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting swing {swing_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete swing: {str(e)}"
+        )

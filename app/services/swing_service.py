@@ -141,6 +141,37 @@ class SwingService:
             raise
 
     @staticmethod
+    async def delete_swing(db: AsyncSession, swing_id: int) -> bool:
+        """
+        Delete a swing analysis by ID.
+
+        Args:
+            db: Database session
+            swing_id: ID of the swing to delete
+
+        Returns:
+            True if deleted successfully
+        """
+        try:
+            result = await db.execute(
+                select(Swing).where(Swing.id == swing_id)
+            )
+            swing = result.scalar_one_or_none()
+
+            if swing:
+                await db.delete(swing)
+                await db.commit()
+                logger.info(f"Deleted swing record with ID: {swing_id}")
+                return True
+
+            return False
+
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error deleting swing {swing_id}: {str(e)}")
+            raise
+
+    @staticmethod
     def swing_to_history_item(swing: Swing) -> SwingHistoryItem:
         """
         Convert a Swing model to a SwingHistoryItem response.

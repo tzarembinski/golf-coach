@@ -1,281 +1,298 @@
-# Golf Coach API - Phase 1
+# Golf Swing Analyzer
 
-A FastAPI-based backend for golf swing analysis using Claude AI vision capabilities.
+A full-stack application for analyzing golf swings using Claude AI vision capabilities. Upload swing images, get detailed AI analysis, track your progress, and compare swings over time.
+
+## Overview
+
+This project consists of two main components:
+- **Backend (Phase 1)**: FastAPI-based REST API with Claude AI integration
+- **Frontend (Phase 2)**: React web application with modern UI/UX
 
 ## Features
 
+### Backend
 - **Swing Analysis**: Upload 1-4 golf swing images and receive expert AI analysis
 - **Position Support**: Analyze different swing positions (address, top, impact, follow-through)
 - **History Tracking**: Store and retrieve past swing analyses with timestamps
 - **Claude AI Integration**: Powered by Anthropic's Claude for detailed swing feedback
 - **RESTful API**: Clean, well-documented endpoints with Pydantic validation
 
+### Frontend
+- **Image Upload**: Drag-and-drop or camera capture for swing images
+- **Real-time Analysis**: View detailed AI analysis with position-by-position breakdowns
+- **Swing History**: Browse all your past analyses with search and filtering
+- **Comparison View**: Compare two swings side-by-side
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Golf-Themed UI**: Professional green color scheme with clean, modern design
+
 ## Tech Stack
 
+### Backend
 - **Python 3.10+**
 - **FastAPI** - Modern, fast web framework
 - **SQLAlchemy** - Async ORM for database operations
-- **SQLite** - Local database (easily upgradeable to PostgreSQL)
+- **SQLite** - Local database
 - **Anthropic Claude** - AI vision model for swing analysis
 - **Pydantic** - Data validation and settings management
+
+### Frontend
+- **React 18** - Modern React with hooks
+- **Vite** - Fast build tool and dev server
+- **Tailwind CSS** - Utility-first CSS framework
+- **React Router** - Client-side routing
+- **Axios** - HTTP client for API calls
+- **React Hot Toast** - Toast notifications
+
+## Quick Start
+
+### Prerequisites
+- Python 3.10 or higher
+- Node.js 18 or higher
+- Anthropic API key ([Get one here](https://console.anthropic.com/))
+
+### 1. Backend Setup
+
+```bash
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY
+
+# Run the backend
+python run.py
+```
+
+Backend will be available at:
+- API: http://localhost:8000
+- Interactive docs: http://localhost:8000/docs
+
+### 2. Frontend Setup
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env if backend is on different URL
+
+# Run the frontend
+npm run dev
+```
+
+Frontend will be available at: http://localhost:5173
+
+### 3. Start Using the App
+
+1. Open http://localhost:5173 in your browser
+2. Upload golf swing images (1-4 positions)
+3. Click "Analyze Swing"
+4. Review your detailed AI-powered analysis
+5. View history and compare swings over time
 
 ## Project Structure
 
 ```
 golf-coach/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application entry point
-│   ├── config.py            # Configuration and settings
-│   ├── database.py          # Database setup and session management
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── swing.py         # SQLAlchemy models
-│   │   └── schemas.py       # Pydantic schemas for validation
-│   ├── routers/
-│   │   ├── __init__.py
-│   │   └── swings.py        # Swing analysis endpoints
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── claude_service.py    # Claude API integration
-│   │   └── swing_service.py     # Database operations
-│   └── utils/
-│       ├── __init__.py
-│       └── image_utils.py   # Image validation and conversion
-├── .env.example             # Example environment variables
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+├── app/                    # Backend (Python/FastAPI)
+│   ├── main.py            # FastAPI application entry point
+│   ├── config.py          # Configuration and settings
+│   ├── database.py        # Database setup
+│   ├── models/            # Database models and schemas
+│   ├── routers/           # API endpoints
+│   ├── services/          # Business logic and Claude integration
+│   └── utils/             # Utility functions
+├── frontend/              # Frontend (React/Vite)
+│   ├── src/
+│   │   ├── components/    # Reusable React components
+│   │   ├── pages/         # Page components
+│   │   ├── context/       # State management
+│   │   ├── services/      # API integration
+│   │   ├── utils/         # Utility functions
+│   │   └── App.jsx        # Main app component
+│   ├── public/            # Static assets
+│   └── package.json       # Frontend dependencies
+├── .env                   # Backend environment variables (create from .env.example)
+├── requirements.txt       # Backend dependencies
+├── run.py                 # Backend startup script
+└── README.md             # This file
 ```
-
-## Setup Instructions
-
-### 1. Clone and Navigate
-
-```bash
-cd golf-coach
-```
-
-### 2. Create Virtual Environment
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure Environment
-
-Copy the example environment file and add your API key:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your Anthropic API key:
-
-```
-ANTHROPIC_API_KEY=your_actual_api_key_here
-```
-
-Get your API key from: https://console.anthropic.com/
-
-### 5. Run the Application
-
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Or using Python directly:
-
-```bash
-python -m app.main
-```
-
-The API will be available at:
-- API: http://localhost:8000
-- Interactive docs: http://localhost:8000/docs
-- Alternative docs: http://localhost:8000/redoc
 
 ## API Endpoints
 
-### 1. Analyze Swing
-**POST** `/api/swings/analyze`
-
-Upload 1-4 images for swing analysis.
-
-**Parameters** (form-data):
-- `address` (file, optional): Setup position image
-- `top` (file, optional): Top of backswing image
-- `impact` (file, optional): Impact position image
-- `follow_through` (file, optional): Follow-through image
-
-**Constraints**:
-- At least 1 image required
-- Max 4 images
-- Supported formats: JPEG, PNG
-- Max size per image: 5MB
-
-**Response**:
-```json
-{
-  "swing_id": 1,
-  "analysis": "Full detailed analysis text...",
-  "rating": 7,
-  "summary": "Brief summary of the swing...",
-  "created_at": "2024-01-15T10:30:00Z",
-  "message": "Swing analyzed successfully"
-}
+### Analyze Swing
 ```
-
-### 2. Get Swing History
-**GET** `/api/swings/history`
-
-Retrieve list of past swing analyses.
-
-**Query Parameters**:
-- `limit` (int, default: 50, max: 100): Number of results
-- `offset` (int, default: 0): Pagination offset
-
-**Response**:
-```json
-{
-  "total": 10,
-  "swings": [
-    {
-      "id": 1,
-      "created_at": "2024-01-15T10:30:00Z",
-      "summary": "Good setup position, needs work on backswing...",
-      "rating": 7,
-      "positions_analyzed": "address,top,impact",
-      "thumbnail": "base64_encoded_thumbnail..."
-    }
-  ]
-}
+POST /analyze-swing
 ```
+Upload swing images (form-data) and receive AI analysis
 
-### 3. Get Specific Swing
-**GET** `/api/swings/{swing_id}`
-
-Get detailed analysis for a specific swing.
-
-**Response**:
-```json
-{
-  "id": 1,
-  "created_at": "2024-01-15T10:30:00Z",
-  "images": {
-    "address": "base64_encoded_image...",
-    "top": "base64_encoded_image..."
-  },
-  "analysis": "Full detailed analysis...",
-  "summary": "Brief summary...",
-  "rating": 7,
-  "positions_analyzed": "address,top"
-}
+### Get History
 ```
-
-## Testing with cURL
-
-### Analyze a swing:
-
-```bash
-curl -X POST "http://localhost:8000/api/swings/analyze" \
-  -F "address=@/path/to/address.jpg" \
-  -F "top=@/path/to/top.jpg" \
-  -F "impact=@/path/to/impact.jpg"
+GET /swing-history
 ```
+Retrieve list of past swing analyses
 
-### Get history:
-
-```bash
-curl "http://localhost:8000/api/swings/history?limit=10"
+### Get Specific Swing
 ```
-
-### Get specific swing:
-
-```bash
-curl "http://localhost:8000/api/swings/1"
+GET /swing-history/{id}
 ```
+Get detailed analysis for a specific swing
+
+### Delete Swing
+```
+DELETE /swing-history/{id}
+```
+Delete a swing analysis
+
+See full API documentation at http://localhost:8000/docs when the backend is running.
 
 ## Development
 
-### Running in Development Mode
+### Backend Development
 
-Set `DEBUG_MODE=true` in your `.env` file for:
-- Auto-reload on code changes
-- Detailed SQL query logging
-- More verbose error messages
-
-### Database
-
-The SQLite database file (`golf_coach.db`) is created automatically on first run.
-
-To reset the database, simply delete the file:
 ```bash
-rm golf_coach.db
+# Run with auto-reload
+python run.py
+
+# Or use uvicorn directly
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Logging
+### Frontend Development
 
-Logs are printed to console with the following format:
+```bash
+cd frontend
+npm run dev
 ```
-2024-01-15 10:30:00 - app.routers.swings - INFO - Received 2 images for analysis
+
+### Build for Production
+
+**Backend:**
+```bash
+# Use gunicorn or similar for production
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
 ```
+
+**Frontend:**
+```bash
+cd frontend
+npm run build
+# Built files will be in frontend/dist/
+```
+
+## Configuration
+
+### Backend (.env)
+```env
+ANTHROPIC_API_KEY=your_api_key_here
+DATABASE_URL=sqlite:///./golf_coach.db
+DEBUG_MODE=false
+```
+
+### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+## Usage Guide
+
+### Analyzing a Swing
+
+1. Navigate to the home page
+2. Upload images for one or more swing positions:
+   - **Address**: Setup position before the swing
+   - **Top**: Top of the backswing
+   - **Impact**: Moment of ball contact
+   - **Follow-Through**: Finish position
+3. Click "Analyze Swing" button
+4. Wait for Claude AI to analyze (usually 5-15 seconds)
+5. Review detailed analysis with scores and recommendations
+
+### Viewing History
+
+1. Click "History" in the navigation
+2. Browse all your past analyses
+3. Use search to filter by date or content
+4. Sort by date or score
+5. Click "View" to see full analysis details
+
+### Comparing Swings
+
+1. Go to History page
+2. Click on two different swing cards to select them
+3. Click "Compare (2/2)" button
+4. View side-by-side comparison with images and analysis
 
 ## Architecture Notes
 
 ### Image Storage
-Images are currently stored as base64 in the SQLite database. This is intentional for Phase 1 to keep things simple. Future phases will optimize this with:
-- Cloud storage (S3, etc.)
-- Database references instead of embedded data
-- Image compression and optimization
+Images are stored as base64 in SQLite for simplicity in Phase 1. Future enhancements may include cloud storage (S3, etc.).
 
-### Async/Await
-The entire application uses async/await for:
-- Non-blocking database operations
-- Concurrent Claude API calls
-- Better performance under load
+### State Management
+Frontend uses React Context API for global state management (swing history, selections, etc.).
 
-### Error Handling
-All endpoints include:
-- Input validation with Pydantic
-- Image format and size validation
-- Helpful error messages
-- Proper HTTP status codes
+### API Communication
+Frontend communicates with backend via REST API with proper error handling and loading states.
 
-## Future Enhancements (Post-Phase 1)
-
-- User authentication and authorization
-- Comparison views for multiple swings
-- Progress tracking over time
-- Video analysis support
-- Cloud storage integration
-- Caching layer for performance
-- Rate limiting
-- PostgreSQL migration for production
+### Async Operations
+Backend uses async/await throughout for non-blocking operations and better performance.
 
 ## Troubleshooting
 
-### "ANTHROPIC_API_KEY not found"
-Make sure you've created a `.env` file with your API key.
+### Backend Issues
 
-### "Module not found" errors
-Ensure you've activated your virtual environment and installed dependencies:
-```bash
-source venv/bin/activate
-pip install -r requirements.txt
-```
+**"ANTHROPIC_API_KEY not found"**
+- Ensure `.env` file exists in the root directory
+- Verify API key is set correctly in `.env`
 
-### Port already in use
-Change the port in `.env` or when running:
-```bash
-uvicorn app.main:app --port 8001
-```
+**Port already in use**
+- Change port in `run.py` or when running uvicorn
+- Kill the process using the port: `lsof -ti:8000 | xargs kill -9`
+
+**Database errors**
+- Delete `golf_coach.db` to reset the database
+
+### Frontend Issues
+
+**API connection errors**
+- Confirm backend is running on http://localhost:8000
+- Check CORS settings in backend
+- Verify `VITE_API_URL` in frontend `.env`
+
+**Images not uploading**
+- Check image size (max 10MB)
+- Ensure format is JPEG, PNG, or WebP
+- Verify backend is running
+
+**Build errors**
+- Delete `node_modules` and `package-lock.json`
+- Run `npm install` again
+
+## Future Enhancements
+
+- [ ] User authentication and profiles
+- [ ] Video analysis support
+- [ ] Progress tracking charts and metrics
+- [ ] Social features (share swings, follow instructors)
+- [ ] Mobile app (React Native)
+- [ ] Cloud storage for images
+- [ ] Real-time coaching mode
+- [ ] Integration with launch monitors
+- [ ] PostgreSQL migration for production
+- [ ] Caching and performance optimization
+
+## Contributing
+
+This is a private project. For questions or issues, please contact the project maintainer.
 
 ## License
 
@@ -283,4 +300,7 @@ Private project - All rights reserved
 
 ## Support
 
-For issues or questions, please create an issue in the project repository.
+For detailed backend documentation, see `README.md` in the root directory.
+For detailed frontend documentation, see `frontend/README.md`.
+
+For API documentation, visit http://localhost:8000/docs when the backend is running.

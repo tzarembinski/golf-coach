@@ -15,7 +15,7 @@ class ClaudeService:
     def __init__(self):
         """Initialize Claude client"""
         self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-        self.model = "claude-3-5-sonnet-20241022"  # Latest model
+        self.model = "claude-3-haiku-20240307"  # Claude 3 Haiku (supports vision)
 
     def _build_analysis_prompt(self, positions: List[str]) -> str:
         """
