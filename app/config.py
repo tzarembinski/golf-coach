@@ -1,6 +1,7 @@
 """Application configuration"""
 from pydantic_settings import BaseSettings
 from typing import List
+import os
 
 
 class Settings(BaseSettings):
@@ -10,7 +11,14 @@ class Settings(BaseSettings):
     anthropic_api_key: str
 
     # Database Configuration
-    database_url: str = "sqlite+aiosqlite:///./golf_coach.db"
+    database_url: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./golf_coach.db")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Convert Neon Postgres URL to use asyncpg driver for async support
+        if self.database_url.startswith("postgresql://") or self.database_url.startswith("postgres://"):
+            self.database_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            self.database_url = self.database_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
     # API Configuration
     api_host: str = "0.0.0.0"
