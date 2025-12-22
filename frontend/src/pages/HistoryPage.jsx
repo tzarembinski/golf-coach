@@ -59,8 +59,10 @@ const HistoryPage = () => {
       if (!searchTerm) return true;
       const term = searchTerm.toLowerCase();
       return (
-        swing.overall_assessment?.summary?.toLowerCase().includes(term) ||
-        format(new Date(swing.created_at), 'PPP').toLowerCase().includes(term)
+        swing.summary?.toLowerCase().includes(term) ||
+        format(new Date(swing.created_at), 'PPP').toLowerCase().includes(term) ||
+        swing.club?.toLowerCase().includes(term) ||
+        swing.shot_outcome?.toLowerCase().includes(term)
       );
     })
     .sort((a, b) => {
@@ -70,9 +72,9 @@ const HistoryPage = () => {
         case 'date-asc':
           return new Date(a.created_at) - new Date(b.created_at);
         case 'score-desc':
-          return (b.overall_assessment?.score || 0) - (a.overall_assessment?.score || 0);
+          return ((b.rating || 0) * 10) - ((a.rating || 0) * 10);
         case 'score-asc':
-          return (a.overall_assessment?.score || 0) - (b.overall_assessment?.score || 0);
+          return ((a.rating || 0) * 10) - ((b.rating || 0) * 10);
         default:
           return 0;
       }
@@ -170,7 +172,9 @@ const HistoryPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAndSortedHistory.map((swing) => {
-            const scoreCategory = getScoreCategory(swing.overall_assessment?.score || 0);
+            // Convert rating (1-10) to score (0-100)
+            const score = swing.rating ? swing.rating * 10 : 0;
+            const scoreCategory = getScoreCategory(score);
             const isSelected = selectedSwings.some(s => s.id === swing.id);
 
             return (
@@ -192,13 +196,29 @@ const HistoryPage = () => {
                   <div className={`${SCORE_BG_COLORS[scoreCategory]} ${SCORE_COLORS[scoreCategory]} inline-block px-4 py-2 rounded-lg mb-3`}>
                     <div className="text-xs font-medium">Score</div>
                     <div className="text-2xl font-bold">
-                      {swing.overall_assessment?.score || 'N/A'}/100
+                      {swing.rating ? `${score}/100` : 'Not Rated'}
                     </div>
                   </div>
 
+                  {/* Club and Outcome */}
+                  {(swing.club || swing.shot_outcome) && (
+                    <div className="flex gap-2 mb-3 text-xs">
+                      {swing.club && (
+                        <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                          {swing.club}
+                        </span>
+                      )}
+                      {swing.shot_outcome && (
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          {swing.shot_outcome}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Summary */}
                   <p className="text-gray-700 text-sm line-clamp-3 mb-4">
-                    {swing.overall_assessment?.summary || 'No summary available'}
+                    {swing.summary || 'No summary available'}
                   </p>
 
                   {/* Actions */}

@@ -33,5 +33,11 @@ class Swing(Base):
     # Swing positions included in this analysis (comma-separated: "address,top,impact,follow_through")
     positions_analyzed = Column(String(200), nullable=False)
 
+    # Shot annotation fields (user-provided context)
+    club = Column(String(100), nullable=True)  # e.g., "Driver", "7-iron"
+    shot_outcome = Column(String(50), nullable=True)  # e.g., "Straight", "Hook", "Slice"
+    focus_area = Column(Text, nullable=True)  # What they were working on
+    notes = Column(Text, nullable=True)  # Additional context
+
     def __repr__(self):
-        return f"<Swing(id={self.id}, created_at={self.created_at}, rating={self.rating})>"
+        return f"<Swing(id={self.id}, created_at={self.created_at}, rating={self.rating}, club={self.club})>"

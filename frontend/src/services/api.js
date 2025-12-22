@@ -12,9 +12,10 @@ const api = axios.create({
 /**
  * Analyze golf swing images
  * @param {Object} images - Object containing swing position images
+ * @param {Object} annotation - Optional annotation data (club, shotOutcome, focusArea, notes)
  * @returns {Promise} Analysis result
  */
-export const analyzeSwing = async (images) => {
+export const analyzeSwing = async (images, annotation = {}) => {
   const formData = new FormData();
 
   // Add images to form data if they exist
@@ -22,6 +23,12 @@ export const analyzeSwing = async (images) => {
   if (images.top) formData.append('top', images.top);
   if (images.impact) formData.append('impact', images.impact);
   if (images.follow_through) formData.append('follow_through', images.follow_through);
+
+  // Add annotation fields if they exist
+  if (annotation.club) formData.append('club', annotation.club);
+  if (annotation.shotOutcome) formData.append('shot_outcome', annotation.shotOutcome);
+  if (annotation.focusArea) formData.append('focus_area', annotation.focusArea);
+  if (annotation.notes) formData.append('notes', annotation.notes);
 
   const response = await api.post('/api/swings/analyze', formData, {
     headers: {
@@ -38,7 +45,7 @@ export const analyzeSwing = async (images) => {
  */
 export const getSwingHistory = async () => {
   const response = await api.get('/api/swings/history');
-  return response.data;
+  return response.data.swings || [];
 };
 
 /**

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiSave, FiRefreshCw } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiSave, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
 import { base64ToBlob } from '../utils/imageUtils';
 import { SWING_POSITION_LABELS, getScoreCategory, SCORE_COLORS, SCORE_BG_COLORS } from '../utils/constants';
 
@@ -16,6 +16,30 @@ const AnalysisResults = ({ analysis, onSave, onAnalyzeAnother }) => {
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  // Extract progression analysis section from full analysis text
+  const extractProgressionAnalysis = (analysisText) => {
+    if (!analysisText) return null;
+
+    // Look for progression analysis section (case-insensitive)
+    const progressionMatch = analysisText.match(/5\.\s*PROGRESSION ANALYSIS[^\n]*\n([\s\S]*?)(?=\n\n[A-Z]|$)/i);
+
+    if (progressionMatch && progressionMatch[1]) {
+      return progressionMatch[1].trim();
+    }
+
+    return null;
+  };
+
+  // Extract main analysis (without progression section)
+  const extractMainAnalysis = (analysisText) => {
+    if (!analysisText) return '';
+
+    // Remove progression analysis section if it exists
+    const mainAnalysis = analysisText.replace(/5\.\s*PROGRESSION ANALYSIS[^\n]*\n[\s\S]*$/i, '').trim();
+
+    return mainAnalysis;
   };
 
   const renderPositionAnalysis = (position, data) => {
@@ -69,7 +93,13 @@ const AnalysisResults = ({ analysis, onSave, onAnalyzeAnother }) => {
     );
   };
 
-  const scoreCategory = getScoreCategory(analysis.overall_assessment?.score || 0);
+  // Convert rating (1-10) to score (0-100)
+  const score = analysis.rating ? analysis.rating * 10 : 0;
+  const scoreCategory = getScoreCategory(score);
+
+  // Extract progression analysis and main analysis
+  const progressionAnalysis = extractProgressionAnalysis(analysis.analysis);
+  const mainAnalysis = extractMainAnalysis(analysis.analysis);
 
   return (
     <div className="space-y-6">
@@ -84,7 +114,7 @@ const AnalysisResults = ({ analysis, onSave, onAnalyzeAnother }) => {
             <div className={`${SCORE_BG_COLORS[scoreCategory]} ${SCORE_COLORS[scoreCategory]} px-6 py-3 rounded-lg`}>
               <div className="text-sm font-medium">Overall Score</div>
               <div className="text-3xl font-bold">
-                {analysis.overall_assessment?.score || 'N/A'}/100
+                {score || 'N/A'}/100
               </div>
             </div>
           </div>
@@ -93,49 +123,45 @@ const AnalysisResults = ({ analysis, onSave, onAnalyzeAnother }) => {
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Summary</h3>
               <p className="text-gray-700 whitespace-pre-wrap">
-                {analysis.overall_assessment?.summary || 'No summary available'}
+                {analysis.summary || 'No summary available'}
               </p>
             </div>
 
-            {analysis.overall_assessment?.key_issues &&
-             analysis.overall_assessment.key_issues.length > 0 && (
+            {mainAnalysis && (
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Key Issues</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700">
-                  {analysis.overall_assessment.key_issues.map((issue, idx) => (
-                    <li key={idx}>{issue}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {analysis.overall_assessment?.recommendations &&
-             analysis.overall_assessment.recommendations.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Recommendations</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700">
-                  {analysis.overall_assessment.recommendations.map((rec, idx) => (
-                    <li key={idx}>{rec}</li>
-                  ))}
-                </ul>
+                <h3 className="font-semibold text-gray-900 mb-2">Detailed Analysis</h3>
+                <div className="prose prose-sm max-w-none">
+                  <div className="whitespace-pre-wrap text-gray-700">
+                    {mainAnalysis}
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Position-by-Position Analysis */}
-      <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Detailed Position Analysis
-        </h2>
-        <div className="space-y-3">
-          {renderPositionAnalysis('address', analysis.positions?.address)}
-          {renderPositionAnalysis('top', analysis.positions?.top)}
-          {renderPositionAnalysis('impact', analysis.positions?.impact)}
-          {renderPositionAnalysis('follow_through', analysis.positions?.follow_through)}
+      {/* Progression Analysis */}
+      {progressionAnalysis && (
+        <div className="card border-2 border-blue-200">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <FiTrendingUp className="w-6 h-6 text-blue-600" />
+              <h2 className="text-2xl font-bold text-gray-900">
+                Progression Analysis
+              </h2>
+            </div>
+            <p className="text-sm text-blue-600 mb-4">
+              Comparison with your previous swings
+            </p>
+            <div className="prose prose-sm max-w-none">
+              <div className="whitespace-pre-wrap text-gray-700">
+                {progressionAnalysis}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Action Buttons */}
       <div className="flex gap-3 pt-4">

@@ -6,7 +6,7 @@ import AnalysisResults from '../components/AnalysisResults';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { analyzeSwing } from '../services/api';
 import { useSwing } from '../context/SwingContext';
-import { SWING_POSITIONS } from '../utils/constants';
+import { SWING_POSITIONS, SHOT_OUTCOMES } from '../utils/constants';
 
 const UploadPage = () => {
   const [images, setImages] = useState({
@@ -14,6 +14,12 @@ const UploadPage = () => {
     top: null,
     impact: null,
     follow_through: null,
+  });
+  const [annotation, setAnnotation] = useState({
+    club: '',
+    shotOutcome: '',
+    focusArea: '',
+    notes: '',
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -35,6 +41,13 @@ const UploadPage = () => {
 
   const hasAnyImage = Object.values(images).some(img => img !== null);
 
+  const handleAnnotationChange = (field, value) => {
+    setAnnotation(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const handleAnalyze = async () => {
     if (!hasAnyImage) {
       toast.error('Please upload at least one image');
@@ -44,7 +57,7 @@ const UploadPage = () => {
     setIsAnalyzing(true);
 
     try {
-      const result = await analyzeSwing(images);
+      const result = await analyzeSwing(images, annotation);
       setAnalysisResult(result);
       addAnalysisToHistory(result);
       toast.success('Analysis complete!');
@@ -70,6 +83,12 @@ const UploadPage = () => {
       top: null,
       impact: null,
       follow_through: null,
+    });
+    setAnnotation({
+      club: '',
+      shotOutcome: '',
+      focusArea: '',
+      notes: '',
     });
     setAnalysisResult(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -127,7 +146,82 @@ const UploadPage = () => {
               />
             </div>
 
-            <div className="flex justify-center">
+            {/* Shot Annotation Section */}
+            <div className="border-t border-gray-200 pt-6 mt-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Shot Context (Optional but Recommended)
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Providing context helps Claude give you more personalized and accurate feedback.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Club */}
+                <div>
+                  <label htmlFor="club" className="block text-sm font-medium text-gray-700 mb-1">
+                    Club Used
+                  </label>
+                  <input
+                    type="text"
+                    id="club"
+                    placeholder="e.g., Driver, 7-iron, Pitching wedge"
+                    value={annotation.club}
+                    onChange={(e) => handleAnnotationChange('club', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-golf-green-500"
+                  />
+                </div>
+
+                {/* Shot Outcome */}
+                <div>
+                  <label htmlFor="shotOutcome" className="block text-sm font-medium text-gray-700 mb-1">
+                    Shot Outcome
+                  </label>
+                  <select
+                    id="shotOutcome"
+                    value={annotation.shotOutcome}
+                    onChange={(e) => handleAnnotationChange('shotOutcome', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-golf-green-500"
+                  >
+                    <option value="">Select outcome...</option>
+                    {SHOT_OUTCOMES.map(outcome => (
+                      <option key={outcome} value={outcome}>{outcome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Focus Area */}
+                <div className="md:col-span-2">
+                  <label htmlFor="focusArea" className="block text-sm font-medium text-gray-700 mb-1">
+                    What were you working on?
+                  </label>
+                  <input
+                    type="text"
+                    id="focusArea"
+                    placeholder="e.g., keeping head still, hip rotation, weight transfer"
+                    value={annotation.focusArea}
+                    onChange={(e) => handleAnnotationChange('focusArea', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-golf-green-500"
+                  />
+                </div>
+
+                {/* Additional Notes */}
+                <div className="md:col-span-2">
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                    Additional Notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    rows="3"
+                    placeholder="Any other context that might be helpful for analysis..."
+                    value={annotation.notes}
+                    onChange={(e) => handleAnnotationChange('notes', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-golf-green-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-center mt-6">
               <button
                 onClick={handleAnalyze}
                 disabled={!hasAnyImage || isAnalyzing}

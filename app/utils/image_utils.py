@@ -70,7 +70,55 @@ async def image_to_base64(file: UploadFile) -> str:
     return base64_encoded
 
 
-async def get_image_media_type(file: UploadFile) -> str:
+async def image_to_base64_with_type(file: UploadFile) -> Tuple[str, str]:
+    """
+    Convert uploaded image file to base64 string along with its media type.
+
+    Args:
+        file: Uploaded file from FastAPI
+
+    Returns:
+        Tuple of (base64_encoded_string, media_type)
+    """
+    content = await file.read()
+    base64_encoded = base64.b64encode(content).decode('utf-8')
+
+    # Detect actual image format from file content using PIL
+    try:
+        image = Image.open(io.BytesIO(content))
+        image_format = image.format.upper() if image.format else None
+
+        # Map PIL format to media type
+        if image_format == 'JPEG':
+            media_type = "image/jpeg"
+        elif image_format == 'PNG':
+            media_type = "image/png"
+        elif image_format == 'WEBP':
+            media_type = "image/webp"
+        elif image_format == 'GIF':
+            media_type = "image/gif"
+        else:
+            # Fallback to content_type from upload
+            content_type = file.content_type or "image/jpeg"
+            if content_type in ["image/jpg", "image/jpeg"]:
+                media_type = "image/jpeg"
+            else:
+                media_type = content_type
+    except Exception:
+        # If PIL fails, fall back to content_type
+        content_type = file.content_type or "image/jpeg"
+        if content_type in ["image/jpg", "image/jpeg"]:
+            media_type = "image/jpeg"
+        else:
+            media_type = content_type
+
+    # Reset file pointer
+    await file.seek(0)
+
+    return base64_encoded, media_type
+
+
+def get_image_media_type(file: UploadFile) -> str:
     """
     Get the media type for the image (for Claude API).
 

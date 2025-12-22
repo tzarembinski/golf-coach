@@ -11,7 +11,7 @@ from app.models.schemas import (
 )
 from app.services.claude_service import claude_service
 from app.services.swing_service import swing_service
-from app.utils.image_utils import validate_image, image_to_base64, validate_swing_position
+from app.utils.image_utils import validate_image, image_to_base64_with_type, validate_swing_position
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,10 @@ async def analyze_swing(
     top: UploadFile = File(None),
     impact: UploadFile = File(None),
     follow_through: UploadFile = File(None),
+    club: str = Form(None),
+    shot_outcome: str = Form(None),
+    focus_area: str = Form(None),
+    notes: str = Form(None),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -74,33 +78,53 @@ async def analyze_swing(
         for position, file in uploaded_files.items():
             await validate_image(file)
 
-        # Convert images to base64
+        # Convert images to base64 with their media types
         images_base64: Dict[str, str] = {}
+        images_media_types: Dict[str, str] = {}
         positions: List[str] = []
 
         for position, file in uploaded_files.items():
-            base64_data = await image_to_base64(file)
+            base64_data, media_type = await image_to_base64_with_type(file)
             images_base64[position] = base64_data
+            images_media_types[position] = media_type
             positions.append(position)
 
         logger.info(f"Converted {len(images_base64)} images to base64")
 
-        # Call Claude API for analysis
-        analysis_text = await claude_service.analyze_swing(images_base64, positions)
+        # Build annotation context
+        annotation_context = {
+            "club": club,
+            "shot_outcome": shot_outcome,
+            "focus_area": focus_area,
+            "notes": notes
+        }
+
+        # Call Claude API for analysis with context
+        analysis_text = await claude_service.analyze_swing(
+            images_base64,
+            positions,
+            images_media_types,
+            annotation_context,
+            db  # Pass db for swing history
+        )
 
         # Parse rating and summary from analysis
         rating, summary = claude_service.parse_analysis(analysis_text)
 
         logger.info(f"Received analysis from Claude. Rating: {rating}, Summary length: {len(summary) if summary else 0}")
 
-        # Save to database
+        # Save to database with annotation fields
         swing = await swing_service.create_swing(
             db=db,
             images=images_base64,
             analysis=analysis_text,
             positions=positions,
             rating=rating,
-            summary=summary
+            summary=summary,
+            club=club,
+            shot_outcome=shot_outcome,
+            focus_area=focus_area,
+            notes=notes
         )
 
         return AnalyzeSwingResponse(
@@ -264,4 +288,52 @@ async def delete_swing(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete swing: {str(e)}"
+        )
+
+
+# Health check router for Claude API testing
+health_router = APIRouter(prefix="/api/health", tags=["health"])
+
+
+@health_router.get(
+    "/claude-test",
+    responses={500: {"model": ErrorResponse}}
+)
+async def test_claude_connection():
+    """
+    Test endpoint to verify Claude API connectivity.
+
+    Makes a minimal "hello" request to Claude to verify:
+    1. API key is loaded correctly
+    2. API connection is working
+    3. Authentication is successful
+
+    Returns detailed success/failure information with full error details if it fails.
+    """
+    try:
+        logger.info("Testing Claude API connection via health endpoint")
+
+        result = await claude_service.test_connection()
+
+        if result["success"]:
+            logger.info("Claude API test successful")
+            return result
+        else:
+            logger.error(f"Claude API test failed: {result.get('error_message')}")
+            raise HTTPException(
+                status_code=500,
+                detail=result
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing Claude connection: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "message": "Failed to test Claude API",
+                "error": str(e)
+            }
         )

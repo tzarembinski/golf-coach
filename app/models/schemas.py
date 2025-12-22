@@ -45,6 +45,10 @@ class SwingResponse(BaseModel):
     summary: Optional[str] = Field(None, description="Brief summary")
     rating: Optional[int] = Field(None, ge=1, le=10, description="Overall rating")
     positions_analyzed: str = Field(..., description="Comma-separated list of positions")
+    club: Optional[str] = Field(None, description="Club used")
+    shot_outcome: Optional[str] = Field(None, description="Shot outcome")
+    focus_area: Optional[str] = Field(None, description="What golfer was working on")
+    notes: Optional[str] = Field(None, description="Additional notes")
 
     class Config:
         from_attributes = True
@@ -58,6 +62,8 @@ class SwingHistoryItem(BaseModel):
     rating: Optional[int]
     positions_analyzed: str
     thumbnail: Optional[str] = Field(None, description="Base64 thumbnail of first image")
+    club: Optional[str] = Field(None, description="Club used")
+    shot_outcome: Optional[str] = Field(None, description="Shot outcome")
 
     class Config:
         from_attributes = True

@@ -19,6 +19,19 @@ export const SWING_POSITION_DESCRIPTIONS = {
   [SWING_POSITIONS.FOLLOW_THROUGH]: 'Finish position after impact',
 };
 
+export const SHOT_OUTCOMES = [
+  'Straight',
+  'Hook',
+  'Slice',
+  'Top',
+  'Fat',
+  'Shank',
+  'Sky',
+  'Thin',
+  'Pull',
+  'Push',
+];
+
 export const SCORE_COLORS = {
   excellent: 'text-green-600',
   good: 'text-golf-green-600',

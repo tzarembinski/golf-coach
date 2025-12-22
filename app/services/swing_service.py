@@ -20,7 +20,11 @@ class SwingService:
         analysis: str,
         positions: List[str],
         rating: Optional[int] = None,
-        summary: Optional[str] = None
+        summary: Optional[str] = None,
+        club: Optional[str] = None,
+        shot_outcome: Optional[str] = None,
+        focus_area: Optional[str] = None,
+        notes: Optional[str] = None
     ) -> Swing:
         """
         Create a new swing analysis record in the database.
@@ -32,6 +36,10 @@ class SwingService:
             positions: List of swing positions analyzed
             rating: Overall rating (1-10)
             summary: Brief summary text
+            club: Club used for the swing
+            shot_outcome: Outcome of the shot
+            focus_area: What the golfer was working on
+            notes: Additional notes
 
         Returns:
             Created Swing instance
@@ -44,7 +52,11 @@ class SwingService:
                 analysis=analysis,
                 summary=summary,
                 rating=rating,
-                positions_analyzed=positions_str
+                positions_analyzed=positions_str,
+                club=club,
+                shot_outcome=shot_outcome,
+                focus_area=focus_area,
+                notes=notes
             )
 
             db.add(swing)
@@ -172,6 +184,30 @@ class SwingService:
             raise
 
     @staticmethod
+    async def get_recent_swings(db: AsyncSession, limit: int = 3) -> List[Swing]:
+        """
+        Get most recent swing analyses for comparison.
+
+        Args:
+            db: Database session
+            limit: Number of recent swings to retrieve (default: 3)
+
+        Returns:
+            List of recent Swing instances
+        """
+        try:
+            result = await db.execute(
+                select(Swing)
+                .order_by(desc(Swing.created_at))
+                .limit(limit)
+            )
+            swings = result.scalars().all()
+            return list(swings)
+        except Exception as e:
+            logger.error(f"Error retrieving recent swings: {str(e)}")
+            return []
+
+    @staticmethod
     def swing_to_history_item(swing: Swing) -> SwingHistoryItem:
         """
         Convert a Swing model to a SwingHistoryItem response.
@@ -198,7 +234,9 @@ class SwingService:
             summary=swing.summary,
             rating=swing.rating,
             positions_analyzed=swing.positions_analyzed,
-            thumbnail=thumbnail
+            thumbnail=thumbnail,
+            club=swing.club,
+            shot_outcome=swing.shot_outcome
         )
 
 

@@ -6,7 +6,7 @@ import logging
 
 from app.config import settings
 from app.database import init_db
-from app.routers import swings
+from app.routers.swings import router as swings_router, health_router
 
 # Configure logging
 logging.basicConfig(
@@ -24,6 +24,21 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("Starting Golf Coach API...")
+
+    # Verify API key is loaded
+    api_key = settings.anthropic_api_key
+    if api_key:
+        print(f"\n{'='*60}")
+        print(f"API Key loaded: {api_key[:20]}...")
+        print(f"API Key length: {len(api_key)} characters")
+        print(f"{'='*60}\n")
+        logger.info(f"Anthropic API key loaded successfully (length: {len(api_key)} chars)")
+    else:
+        print(f"\n{'='*60}")
+        print("WARNING: No API key found!")
+        print(f"{'='*60}\n")
+        logger.error("Anthropic API key not found in environment!")
+
     logger.info("Initializing database...")
     await init_db()
     logger.info("Database initialized successfully")
@@ -55,7 +70,8 @@ app.add_middleware(
 logger.info(f"CORS enabled for origins: {settings.cors_origins}")
 
 # Include routers
-app.include_router(swings.router)
+app.include_router(swings_router)
+app.include_router(health_router)
 
 
 @app.get("/")
