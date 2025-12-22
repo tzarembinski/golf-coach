@@ -39,9 +39,23 @@ async def lifespan(app: FastAPI):
         print(f"{'='*60}\n")
         logger.error("Anthropic API key not found in environment!")
 
-    logger.info("Initializing database...")
-    await init_db()
-    logger.info("Database initialized successfully")
+    # Log database configuration
+    db_type = 'Postgres' if 'postgresql' in settings.database_url else 'SQLite'
+    print(f"\n{'='*60}")
+    print(f"Database Configuration:")
+    print(f"  Type: {db_type}")
+    print(f"  Driver: {'asyncpg' if 'asyncpg' in settings.database_url else 'aiosqlite'}")
+    print(f"{'='*60}\n")
+
+    logger.info(f"Initializing {db_type} database...")
+    try:
+        await init_db()
+        logger.info("Database initialized successfully")
+        print(f"✓ Database connection established ({db_type})")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        print(f"✗ Database connection failed: {e}")
+        raise
     logger.info(f"API ready on {settings.api_host}:{settings.api_port}")
 
     yield

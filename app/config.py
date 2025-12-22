@@ -16,9 +16,16 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Convert Neon Postgres URL to use asyncpg driver for async support
-        if self.database_url.startswith("postgresql://") or self.database_url.startswith("postgres://"):
+        if self.database_url.startswith("postgresql://"):
             self.database_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif self.database_url.startswith("postgres://"):
             self.database_url = self.database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+        # Log database configuration (with sanitized URL)
+        db_type = 'Postgres' if 'postgresql' in self.database_url else 'SQLite'
+        sanitized_url = self.database_url.split('@')[-1] if '@' in self.database_url else self.database_url[:50]
+        print(f"Database type: {db_type}")
+        print(f"Connecting to: ...{sanitized_url}")
 
     # API Configuration
     api_host: str = "0.0.0.0"
