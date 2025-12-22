@@ -21,6 +21,10 @@ class Settings(BaseSettings):
         elif self.database_url.startswith("postgres://"):
             self.database_url = self.database_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
+        # Fix SSL mode for asyncpg - replace ?sslmode=require with ?ssl=require
+        if "postgresql+asyncpg://" in self.database_url and "sslmode=" in self.database_url:
+            self.database_url = self.database_url.replace("sslmode=", "ssl=")
+
         # Log database configuration (with sanitized URL)
         db_type = 'Postgres' if 'postgresql' in self.database_url else 'SQLite'
         sanitized_url = self.database_url.split('@')[-1] if '@' in self.database_url else self.database_url[:50]
