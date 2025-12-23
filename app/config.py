@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     debug_mode: bool = False
 
     # CORS Configuration
-    allowed_origins: str = "http://localhost:3000,http://localhost:5173"
+    allowed_origins: str = "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,https://golf-coach-frontend.vercel.app,https://frontend-gilt-two-85.vercel.app"
 
     @property
     def cors_origins(self) -> List[str]:
