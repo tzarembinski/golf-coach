@@ -7,6 +7,7 @@ import logging
 from app.config import settings
 from app.database import init_db
 from app.routers.swings import router as swings_router, health_router
+from app.routers.debug import router as debug_router
 
 # Configure logging
 logging.basicConfig(
@@ -86,6 +87,7 @@ logger.info(f"CORS enabled for origins: {settings.cors_origins}")
 # Include routers
 app.include_router(swings_router)
 app.include_router(health_router)
+app.include_router(debug_router)
 
 
 @app.get("/")

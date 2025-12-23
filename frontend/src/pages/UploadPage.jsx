@@ -7,6 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { analyzeSwing } from '../services/api';
 import { useSwing } from '../context/SwingContext';
 import { SWING_POSITIONS, SHOT_OUTCOMES } from '../utils/constants';
+import DebugLogger from '../utils/debugLogger';
 
 const UploadPage = () => {
   const [images, setImages] = useState({
@@ -54,12 +55,50 @@ const UploadPage = () => {
       return;
     }
 
+    // Initialize debug logger
+    const debug = new DebugLogger();
+
+    // Step 1: User uploads images (already completed at this point)
+    debug.logStep(1, 'completed', {
+      imageCount: Object.values(images).filter(img => img !== null).length,
+      positions: Object.keys(images).filter(key => images[key] !== null),
+    });
+
+    // Step 2: Images are already compressed by ImageUpload component
+    debug.logStep(2, 'completed', {
+      message: 'Images compressed by ImageUpload component (2MB max)',
+    });
+
+    // Step 3: User added annotations
+    debug.logStep(3, 'completed', {
+      hasClub: !!annotation.club,
+      hasShotOutcome: !!annotation.shotOutcome,
+      hasFocusArea: !!annotation.focusArea,
+      hasNotes: !!annotation.notes,
+    });
+
     setIsAnalyzing(true);
 
     try {
-      const result = await analyzeSwing(images, annotation);
+      const result = await analyzeSwing(images, annotation, debug);
+
+      // Step 13: Backend returned response (logged by api.js)
+      debug.logStep(13, 'completed', {
+        swing_id: result.swing_id,
+        rating: result.rating,
+        request_id: result.request_id,
+      });
+
+      // Step 14: Update SwingContext state
+      debug.logStep(14, 'started');
       setAnalysisResult(result);
       addAnalysisToHistory(result);
+      debug.logStep(14, 'completed', {
+        message: 'SwingContext state updated',
+      });
+
+      // Step 15: Display AnalysisResults component
+      debug.logStep(15, 'started');
       toast.success('Analysis complete!');
 
       // Scroll to results
@@ -68,10 +107,33 @@ const UploadPage = () => {
           behavior: 'smooth',
           block: 'start',
         });
+
+        // Mark step 15 as completed after UI update
+        debug.logStep(15, 'completed', {
+          message: 'AnalysisResults component displayed',
+        });
+
+        // Finalize debug session
+        debug.finalize(true);
       }, 100);
     } catch (error) {
       console.error('Analysis failed:', error);
-      toast.error(error.response?.data?.detail || 'Failed to analyze swing. Please try again.');
+
+      const errorMsg = error.response?.data?.detail || error.message || 'Failed to analyze swing';
+
+      debug.logStep(
+        debug.steps.length > 0 ? Math.max(...debug.steps.map(s => s.stepNumber)) + 1 : 1,
+        'failed',
+        {
+          error: errorMsg,
+          status: error.response?.status,
+        },
+        errorMsg
+      );
+
+      debug.finalize(false);
+
+      toast.error(errorMsg);
     } finally {
       setIsAnalyzing(false);
     }

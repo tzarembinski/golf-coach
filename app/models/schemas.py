@@ -83,6 +83,7 @@ class AnalyzeSwingResponse(BaseModel):
     summary: Optional[str]
     created_at: datetime
     message: str = "Swing analyzed successfully"
+    request_id: Optional[str] = Field(None, description="Debug request ID for tracking")
 
 
 class ErrorResponse(BaseModel):

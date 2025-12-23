@@ -1,6 +1,6 @@
 """API router for swing analysis endpoints"""
 from typing import List, Dict
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.schemas import (
@@ -12,6 +12,7 @@ from app.models.schemas import (
 from app.services.claude_service import claude_service
 from app.services.swing_service import swing_service
 from app.utils.image_utils import validate_image, image_to_base64_with_type, validate_swing_position
+from app.utils.debug_logger import DebugLogger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ async def analyze_swing(
     shot_outcome: str = Form(None),
     focus_area: str = Form(None),
     notes: str = Form(None),
+    x_request_id: str = Header(None),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -48,6 +50,20 @@ async def analyze_swing(
 
     Returns the analysis from Claude along with a swing ID for future reference.
     """
+    # Initialize debug logger with request ID from frontend (if provided)
+    debug = DebugLogger(request_id=x_request_id)
+    debug.log_step(4, "completed", details={
+        "message": "Backend received FormData request",
+        "has_address": address is not None,
+        "has_top": top is not None,
+        "has_impact": impact is not None,
+        "has_follow_through": follow_through is not None,
+        "has_club": bool(club),
+        "has_shot_outcome": bool(shot_outcome),
+        "has_focus_area": bool(focus_area),
+        "has_notes": bool(notes)
+    })
+
     try:
         # Collect uploaded files and their positions
         uploaded_files = {
@@ -74,11 +90,23 @@ async def analyze_swing(
 
         logger.info(f"Received {len(uploaded_files)} images for analysis: {list(uploaded_files.keys())}")
 
-        # Validate all images
+        # Step 5: Validate all images
+        debug.log_step(5, "started", details={
+            "image_count": len(uploaded_files),
+            "positions": list(uploaded_files.keys())
+        })
+
         for position, file in uploaded_files.items():
             await validate_image(file)
 
-        # Convert images to base64 with their media types
+        debug.log_step(5, "completed", details={
+            "validated_images": len(uploaded_files),
+            "max_size_mb": 5
+        })
+
+        # Step 6: Convert images to base64 with their media types
+        debug.log_step(6, "started")
+
         images_base64: Dict[str, str] = {}
         images_media_types: Dict[str, str] = {}
         positions: List[str] = []
@@ -91,6 +119,12 @@ async def analyze_swing(
 
         logger.info(f"Converted {len(images_base64)} images to base64")
 
+        debug.log_step(6, "completed", details={
+            "converted_images": len(images_base64),
+            "media_types": images_media_types,
+            "positions": positions
+        })
+
         # Build annotation context
         annotation_context = {
             "club": club,
@@ -99,21 +133,36 @@ async def analyze_swing(
             "notes": notes
         }
 
-        # Call Claude API for analysis with context
+        # Steps 7-10: Call Claude API (which internally fetches history, builds prompt, and calls API)
+        debug.log_step(7, "started", details={"message": "Fetching recent swing history"})
+
         analysis_text = await claude_service.analyze_swing(
             images_base64,
             positions,
             images_media_types,
             annotation_context,
-            db  # Pass db for swing history
+            db,  # Pass db for swing history
+            debug  # Pass debug logger to track steps 7-10
         )
 
-        # Parse rating and summary from analysis
+        # Claude service will log steps 7-10 internally
+        debug.log_step(10, "completed", details={"message": "Analysis received from Claude"})
+
+        # Step 11: Parse rating and summary from analysis
+        debug.log_step(11, "started", details={"analysis_length": len(analysis_text)})
+
         rating, summary = claude_service.parse_analysis(analysis_text)
 
         logger.info(f"Received analysis from Claude. Rating: {rating}, Summary length: {len(summary) if summary else 0}")
 
-        # Save to database with annotation fields
+        debug.log_step(11, "completed", details={
+            "rating": rating,
+            "summary_length": len(summary) if summary else 0
+        })
+
+        # Step 12: Save to database with annotation fields
+        debug.log_step(12, "started", details={"message": "Saving swing record to database"})
+
         swing = await swing_service.create_swing(
             db=db,
             images=images_base64,
@@ -127,18 +176,52 @@ async def analyze_swing(
             notes=notes
         )
 
+        debug.log_step(12, "completed", details={
+            "swing_id": swing.id,
+            "created_at": str(swing.created_at)
+        })
+
+        # Step 13: Return structured response to frontend
+        debug.log_step(13, "completed", details={
+            "swing_id": swing.id,
+            "rating": rating,
+            "message": "Backend successfully returning response to frontend"
+        })
+
+        # Finalize debug session
+        debug.finalize(success=True)
+
         return AnalyzeSwingResponse(
             swing_id=swing.id,
             analysis=analysis_text,
             rating=rating,
             summary=summary,
             created_at=swing.created_at,
-            message="Swing analyzed successfully"
+            message="Swing analyzed successfully",
+            request_id=debug.request_id  # Include request ID in response for frontend
         )
 
-    except HTTPException:
+    except HTTPException as he:
+        # Log the HTTP exception to debug logger
+        debug.log_step(
+            debug.metadata.get("steps_completed", 0) + 1,
+            "failed",
+            error=f"HTTP {he.status_code}: {he.detail}"
+        )
+        debug.finalize(success=False)
         raise
     except Exception as e:
+        # Log the general exception to debug logger
+        import traceback
+        error_msg = f"{type(e).__name__}: {str(e)}"
+        debug.log_step(
+            debug.metadata.get("steps_completed", 0) + 1,
+            "failed",
+            details={"traceback": traceback.format_exc()},
+            error=error_msg
+        )
+        debug.finalize(success=False)
+
         logger.error(f"Error analyzing swing: {str(e)}")
         raise HTTPException(
             status_code=500,

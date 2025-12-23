@@ -111,7 +111,8 @@ Please be specific, constructive, and focus on the most impactful improvements. 
         positions: List[str],
         media_types: Dict[str, str] = None,
         annotation_context: Dict = None,
-        db = None
+        db = None,
+        debug = None
     ) -> str:
         """
         Analyze golf swing using Claude Vision API.
@@ -130,14 +131,30 @@ Please be specific, constructive, and focus on the most impactful improvements. 
             Exception: If API call fails
         """
         try:
-            # Get recent swing history for comparison if db session provided
+            # Step 7: Get recent swing history for comparison if db session provided
             swing_history = []
             if db:
                 from app.services.swing_service import swing_service
                 swing_history = await swing_service.get_recent_swings(db, limit=3)
 
-            # Build the prompt with context and history
+                if debug:
+                    debug.log_step(7, "completed", details={
+                        "history_count": len(swing_history),
+                        "message": f"Fetched {len(swing_history)} recent swings for comparison"
+                    })
+
+            # Step 8: Build the prompt with context and history
+            if debug:
+                debug.log_step(8, "started", details={"message": "Building intelligent prompt"})
+
             prompt = self._build_analysis_prompt(positions, annotation_context, swing_history)
+
+            if debug:
+                debug.log_step(8, "completed", details={
+                    "prompt_length": len(prompt),
+                    "has_history": len(swing_history) > 0,
+                    "has_context": annotation_context is not None
+                })
 
             # Build the message content with images
             content = []
@@ -186,7 +203,15 @@ Please be specific, constructive, and focus on the most impactful improvements. 
             logger.info(f"Using model: {self.model}")
             logger.info(f"Content blocks: {len(content)}")
 
-            # Call Claude API
+            # Step 9: Call Claude API
+            if debug:
+                debug.log_step(9, "started", details={
+                    "model": self.model,
+                    "positions_count": len(positions),
+                    "content_blocks": len(content),
+                    "max_tokens": 2048
+                })
+
             response = await self.client.messages.create(
                 model=self.model,
                 max_tokens=2048,
@@ -195,6 +220,15 @@ Please be specific, constructive, and focus on the most impactful improvements. 
                     "content": content
                 }]
             )
+
+            if debug:
+                debug.log_step(9, "completed", details={
+                    "response_id": response.id,
+                    "stop_reason": response.stop_reason,
+                    "input_tokens": response.usage.input_tokens,
+                    "output_tokens": response.usage.output_tokens,
+                    "total_tokens": response.usage.input_tokens + response.usage.output_tokens
+                })
 
             # Detailed logging after API call
             print(f"\n{'='*60}")

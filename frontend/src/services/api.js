@@ -1,4 +1,5 @@
 import axios from 'axios';
+import DebugLogger from '../utils/debugLogger';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -13,9 +14,10 @@ const api = axios.create({
  * Analyze golf swing images
  * @param {Object} images - Object containing swing position images
  * @param {Object} annotation - Optional annotation data (club, shotOutcome, focusArea, notes)
+ * @param {DebugLogger} debug - Optional debug logger instance
  * @returns {Promise} Analysis result
  */
-export const analyzeSwing = async (images, annotation = {}) => {
+export const analyzeSwing = async (images, annotation = {}, debug = null) => {
   const formData = new FormData();
 
   // Add images to form data if they exist
@@ -30,11 +32,30 @@ export const analyzeSwing = async (images, annotation = {}) => {
   if (annotation.focusArea) formData.append('focus_area', annotation.focusArea);
   if (annotation.notes) formData.append('notes', annotation.notes);
 
+  // Step 4: Send FormData to backend
+  if (debug) {
+    debug.logStep(4, 'started', {
+      imageCount: Object.values(images).filter(img => img !== null).length,
+      hasClub: !!annotation.club,
+      hasShotOutcome: !!annotation.shotOutcome,
+      hasFocusArea: !!annotation.focusArea,
+      hasNotes: !!annotation.notes,
+    });
+  }
+
   const response = await api.post('/api/swings/analyze', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
+      // Pass request ID to backend for tracking
+      'X-Request-Id': debug ? debug.getRequestId() : undefined,
     },
   });
+
+  if (debug) {
+    debug.logStep(4, 'completed', {
+      message: 'FormData sent to backend successfully',
+    });
+  }
 
   return response.data;
 };
