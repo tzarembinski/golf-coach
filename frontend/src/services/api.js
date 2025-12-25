@@ -3,12 +3,43 @@ import DebugLogger from '../utils/debugLogger';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// Log API configuration for debugging
+console.log('%c========================================', 'color: #3b82f6; font-weight: bold');
+console.log('%cAPI CONFIGURATION', 'color: #3b82f6; font-weight: bold');
+console.log('%c========================================', 'color: #3b82f6; font-weight: bold');
+console.log('%cAPI_BASE_URL:', 'color: #3b82f6; font-weight: bold', API_BASE_URL);
+console.log('%cVITE_API_URL env var:', 'color: #3b82f6', import.meta.env.VITE_API_URL);
+console.log('%cAll env vars:', 'color: #3b82f6', import.meta.env);
+console.log('%c========================================', 'color: #3b82f6; font-weight: bold');
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Add response interceptor for detailed error logging
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('%c========================================', 'color: #ef4444; font-weight: bold');
+    console.error('%cAPI ERROR INTERCEPTED', 'color: #ef4444; font-weight: bold');
+    console.error('%c========================================', 'color: #ef4444; font-weight: bold');
+    console.error('%cError type:', 'color: #ef4444', error.name);
+    console.error('%cError message:', 'color: #ef4444', error.message);
+    console.error('%cRequest URL:', 'color: #ef4444', error.config?.url);
+    console.error('%cFull request URL:', 'color: #ef4444', error.config?.baseURL + error.config?.url);
+    console.error('%cRequest method:', 'color: #ef4444', error.config?.method);
+    console.error('%cResponse status:', 'color: #ef4444', error.response?.status);
+    console.error('%cResponse data:', 'color: #ef4444', error.response?.data);
+    console.error('%cNetwork error?:', 'color: #ef4444', !error.response);
+    console.error('%cFull error object:', 'color: #ef4444', error);
+    console.error('%c========================================', 'color: #ef4444; font-weight: bold');
+
+    return Promise.reject(error);
+  }
+);
 
 /**
  * Analyze golf swing images

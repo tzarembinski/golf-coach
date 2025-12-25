@@ -13,10 +13,11 @@ const ImageUpload = ({ position, image, onImageChange, onImageRemove }) => {
   const cameraInputRef = useRef(null);
 
   const compressImage = async (file) => {
-    const MAX_SIZE_MB = 2;
+    // Reduced to 1MB per image to stay under Vercel's 4.5MB serverless limit with 4 images
+    const MAX_SIZE_MB = 1;
     const fileSizeMB = file.size / 1024 / 1024;
 
-    // If file is already under 2MB, return as-is
+    // If file is already under 1MB, return as-is
     if (fileSizeMB <= MAX_SIZE_MB) {
       return file;
     }
@@ -26,9 +27,9 @@ const ImageUpload = ({ position, image, onImageChange, onImageRemove }) => {
 
       const options = {
         maxSizeMB: MAX_SIZE_MB,
-        maxWidthOrHeight: 1920,
+        maxWidthOrHeight: 1280, // Reduced from 1920 for smaller files
         useWebWorker: true,
-        quality: 0.8,
+        quality: 0.7, // Reduced from 0.8 for better compression
       };
 
       const compressedFile = await imageCompression(file, options);
@@ -193,7 +194,7 @@ const ImageUpload = ({ position, image, onImageChange, onImageRemove }) => {
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-2">
-                PNG, JPG, WebP • Auto-compressed to 2MB
+                PNG, JPG, WebP • Auto-compressed to 1MB
               </p>
             </div>
           </div>

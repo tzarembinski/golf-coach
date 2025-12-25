@@ -7,6 +7,16 @@ import HistoryPage from './pages/HistoryPage';
 import AnalysisDetailPage from './pages/AnalysisDetailPage';
 import ComparisonPage from './pages/ComparisonPage';
 
+// Log app initialization
+console.log('%c========================================', 'color: #8b5cf6; font-weight: bold');
+console.log('%cGOLF SWING ANALYZER - APP INITIALIZED', 'color: #8b5cf6; font-weight: bold');
+console.log('%c========================================', 'color: #8b5cf6; font-weight: bold');
+console.log('%cTimestamp:', 'color: #8b5cf6', new Date().toISOString());
+console.log('%cUser Agent:', 'color: #8b5cf6', navigator.userAgent);
+console.log('%cPlatform:', 'color: #8b5cf6', navigator.platform);
+console.log('%cWindow location:', 'color: #8b5cf6', window.location.href);
+console.log('%c========================================', 'color: #8b5cf6; font-weight: bold');
+
 function App() {
   return (
     <SwingProvider>
